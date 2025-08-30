@@ -3,10 +3,15 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+const footballApiRoutes = require('./routes/footballApiRoutes');
+
+
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/api/football', footballApiRoutes);
 
 // Mongo connection event logs
 mongoose.connection.on('connected', () => console.log('MongoDB connected (event)'));
@@ -32,3 +37,10 @@ mongoose.connect(process.env.MONGO_URI)
 // After other code
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
+// ... existing code above ...
+
+
+
+
+
+// ... rest of existing code ...

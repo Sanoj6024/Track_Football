@@ -2,59 +2,163 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-const API_BASE_URL = 'https://api.football-data.org/v4';
-const API_TOKEN = process.env.FOOTBALL_API_KEY;
+const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY;
+const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY;
 
-const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  headers: { 'X-Auth-Token': API_TOKEN },
+const footballData = axios.create({
+  baseURL: 'https://api.football-data.org/v4',
+  headers: { 'X-Auth-Token': FOOTBALL_DATA_KEY }
 });
 
-// Proxy route for league standings
+const apiFootball = axios.create({
+  baseURL: 'https://v3.football.api-sports.io',
+  headers: { 'x-apisports-key': API_FOOTBALL_KEY }
+});
+
+// Simple in-memory cache object
+const cache = {};
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+function getCached(key) {
+  const cached = cache[key];
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCached(key, data) {
+  cache[key] = { data, timestamp: Date.now() };
+}
+
+// 1. Get competitions (use Football-Data.org)
+router.get('/competitions', async (req, res) => {
+  const cacheKey = 'competitions';
+  const cached = getCached(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    const response = await footballData.get('/competitions');
+    setCached(cacheKey, response.data);
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. League standings (from Football-Data.org)
 router.get('/standings/:leagueCode', async (req, res) => {
+  const { leagueCode } = req.params;
+  const cacheKey = `standings_${leagueCode}`;
+  const cached = getCached(cacheKey);
+  if (cached) return res.json(cached);
+
   try {
-    const { leagueCode } = req.params;
-    const response = await axiosInstance.get(`/competitions/${leagueCode}/standings`);
+    const response = await footballData.get(`/competitions/${leagueCode}/standings`);
+    setCached(cacheKey, response.data);
     res.json(response.data);
-  } catch (error) {
-    res.status(error.response?.status || 500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Proxy route for today's matches
+// 3. League matches / fixtures (today or date range) - use Football-Data.org
 router.get('/matches/:leagueCode', async (req, res) => {
+  const { leagueCode } = req.params;
+  const { dateFrom, dateTo, team } = req.query;
+
+  let cacheKey = `matches_${leagueCode}_${dateFrom}_${dateTo}`;
+  if (team) cacheKey += `_team_${team}`;
+  const cached = getCached(cacheKey);
+  if (cached) return res.json(cached);
+
   try {
-    const { leagueCode } = req.params;
-    const { dateFrom, dateTo } = req.query;
-    const response = await axiosInstance.get(`/competitions/${leagueCode}/matches`, {
-      params: { dateFrom, dateTo },
+    const params = {};
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
+    const response = await footballData.get(`/competitions/${leagueCode}/matches`, { params });
+
+    // Filter if team specified
+    let matches = response.data.matches || [];
+    if (team) {
+      matches = matches.filter(
+        m => m.homeTeam.id === parseInt(team) || m.awayTeam.id === parseInt(team)
+      );
+    }
+
+    const result = { ...response.data, matches };
+    setCached(cacheKey, result);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Live scores (prefer API-Football; fallback logic can be added)
+router.get('/livescores/:leagueCode', async (req, res) => {
+  const { leagueCode } = req.params;
+  const cacheKey = `livescores_${leagueCode}`;
+  const cached = getCached(cacheKey);
+  if (cached) return res.json(cached);
+
+  try {
+    // API-Football expects league id and current season (example fixed season 2025)
+    // You may need mapping from code to id
+    const leagueId = mapLeagueCodeToId(leagueCode); // implement mapping separately
+    if (!leagueId) return res.status(400).json({ error: 'Invalid league code' });
+
+    const response = await apiFootball.get('/fixtures', {
+      params: { league: leagueId, season: 2025, live: 'all' }
     });
+    setCached(cacheKey, response.data);
     res.json(response.data);
-  } catch (error) {
-    res.status(error.response?.status || 500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Proxy for teams in a competition
-router.get('/teams/:leagueCode', async (req, res) => {
+// 5. Team search by name (API-Football)
+router.get('/teamsearch', async (req, res) => {
+  const { name } = req.query;
+  if (!name) return res.status(400).json({ error: 'Name query param is required' });
+
   try {
-    const { leagueCode } = req.params;
-    const response = await axiosInstance.get(`/competitions/${leagueCode}/teams`);
+    const response = await apiFootball.get('/teams', { params: { search: name } });
     res.json(response.data);
-  } catch (error) {
-    res.status(error.response?.status || 500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Proxy for player by ID
-router.get('/player/:playerId', async (req, res) => {
+// 6. Team fixtures by team ID and date (API-Football)
+router.get('/fixtures/team/:teamId', async (req, res) => {
+  const { teamId } = req.params;
+  const { date } = req.query; // 'YYYY-MM-DD'
+
   try {
-    const { playerId } = req.params;
-    const response = await axiosInstance.get(`/persons/${playerId}`);
+    const params = { season: 2025 };
+    if (date) {
+      params.from = date;
+      params.to = date;
+    }
+    const response = await apiFootball.get('/fixtures', { params: { team: teamId, ...params } });
     res.json(response.data);
-  } catch (error) {
-    res.status(error.response?.status || 500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
+
+// Helper function: map your league code like PL to API-Football league id
+function mapLeagueCodeToId(code) {
+  const mapping = {
+    PL: 39,
+    BL1: 78,
+    PD: 140,
+    SA: 135,
+    FL1: 61,
+    UCL: 2
+  };
+  return mapping[code] || null;
+}
 
 module.exports = router;

@@ -94,3 +94,80 @@
     padding: 1.5rem 1rem;
   }
 }
+.football-actions {
+  max-width: 900px;
+  margin: auto;
+  background: transparent;
+  padding-top: 32px;
+}
+
+.area-league-select {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.area-label, .league-label {
+  font-weight: 600;
+  color: #8fd953;
+  margin-right: 8px;
+}
+
+.section-head {
+  color: #8fd953;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+
+.standings-placeholder, .matches-placeholder, .team-placeholder, .player-placeholder {
+  min-height: 80px;
+  background: rgba(40, 44, 52, 0.9);
+  color: #999;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border: 1px dashed #2fa356;
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+input[type="text"] {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  margin-right: 6px;
+  background: #222;
+  color: #eee;
+  font-size: 1rem;
+  outline: none;
+}
+
+button.team-search-btn, button.player-search-btn {
+  background: #2fa356;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 7px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 6px;
+}
+
+button.team-search-btn:hover, button.player-search-btn:hover {
+  background: #259f41;
+}
+
+select {
+  background: #222;
+  color: #eee;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 1rem;
+  outline: none;
+}
+
