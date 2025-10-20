@@ -1,19 +1,34 @@
-const express = require('express');
 const axios = require('axios');
+const express = require('express');
 const router = express.Router();
 
-const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY;
-const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY;
+// Use either FOOTBALL_DATA_KEY or FOOTBALL_API_KEY (backwards compatibility)
+const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY || process.env.FOOTBALL_API_KEY || '';
 
+// Use either API_FOOTBALL_KEY or API_FOOTBALL (backwards compatibility)
+const API_FOOTBALL_KEY = process.env.API_FOOTBALL_KEY || process.env.API_FOOTBALL || '';
+
+// axios instances
 const footballData = axios.create({
   baseURL: 'https://api.football-data.org/v4',
-  headers: { 'X-Auth-Token': FOOTBALL_DATA_KEY }
+  headers: FOOTBALL_DATA_KEY ? { 'X-Auth-Token': FOOTBALL_DATA_KEY } : {}
 });
 
 const apiFootball = axios.create({
   baseURL: 'https://v3.football.api-sports.io',
-  headers: { 'x-apisports-key': API_FOOTBALL_KEY }
+  headers: API_FOOTBALL_KEY ? { 'x-apisports-key': API_FOOTBALL_KEY } : {}
 });
+
+// Helper: log axios error details for easier debugging
+function logAxiosError(err, context) {
+  if (err && err.response) {
+    console.error(`[${context}] axios error status=${err.response.status} data=`, JSON.stringify(err.response.data));
+  } else if (err && err.request) {
+    console.error(`[${context}] no response received, request=`, err.request);
+  } else {
+    console.error(`[${context}] error:`, err && err.message ? err.message : err);
+  }
+}
 
 // Simple in-memory cache object
 const cache = {};
@@ -40,9 +55,11 @@ router.get('/competitions', async (req, res) => {
   try {
     const response = await footballData.get('/competitions');
     setCached(cacheKey, response.data);
-    res.json(response.data);
+    return res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logAxiosError(err, 'GET /competitions');
+    const errorPayload = err.response?.data || { message: err.message || 'Unexpected error' };
+    return res.status(err.response?.status || 500).json({ error: errorPayload });
   }
 });
 
@@ -58,7 +75,9 @@ router.get('/standings/:leagueCode', async (req, res) => {
     setCached(cacheKey, response.data);
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logAxiosError(err, `GET /standings/${leagueCode}`);
+    const errorPayload = err.response?.data || { message: err.message || 'Unexpected error' };
+    return res.status(err.response?.status || 500).json({ error: errorPayload });
   }
 });
 
@@ -90,7 +109,9 @@ router.get('/matches/:leagueCode', async (req, res) => {
     setCached(cacheKey, result);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logAxiosError(err, `GET /matches/${leagueCode}`);
+    const errorPayload = err.response?.data || { message: err.message || 'Unexpected error' };
+    return res.status(err.response?.status || 500).json({ error: errorPayload });
   }
 });
 
@@ -113,7 +134,9 @@ router.get('/livescores/:leagueCode', async (req, res) => {
     setCached(cacheKey, response.data);
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logAxiosError(err, `GET /livescores/${leagueCode}`);
+    const errorPayload = err.response?.data || { message: err.message || 'Unexpected error' };
+    return res.status(err.response?.status || 500).json({ error: errorPayload });
   }
 });
 
@@ -126,7 +149,9 @@ router.get('/teamsearch', async (req, res) => {
     const response = await apiFootball.get('/teams', { params: { search: name } });
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logAxiosError(err, 'GET /teamsearch');
+    const errorPayload = err.response?.data || { message: err.message || 'Unexpected error' };
+    return res.status(err.response?.status || 500).json({ error: errorPayload });
   }
 });
 
@@ -144,7 +169,9 @@ router.get('/fixtures/team/:teamId', async (req, res) => {
     const response = await apiFootball.get('/fixtures', { params: { team: teamId, ...params } });
     res.json(response.data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    logAxiosError(err, `GET /fixtures/team/${teamId}`);
+    const errorPayload = err.response?.data || { message: err.message || 'Unexpected error' };
+    return res.status(err.response?.status || 500).json({ error: errorPayload });
   }
 });
 
