@@ -1,47 +1,86 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "./TodaysFixtures.css";
 
-function LeagueFixtures({ competitionCode, teamId }) {
+function formatTime(dateString) {
+  const d = new Date(dateString);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function getMatchStatus(status) {
+  switch (status) {
+    case "FT": return "Full Time";
+    case "LIVE": return "Live";
+    case "HT": return "Half Time";
+    case "NS": return "Upcoming";
+    case "PST": return "Postponed";
+    default: return status;
+  }
+}
+
+export default function TodaysFixtures() {
   const [fixtures, setFixtures] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!competitionCode) return;
-    setLoading(true);
+    async function fetchFixtures() {
+      try {
+        const res = await axios.get("/api/football/fixtures/live");
+        setFixtures(res.data.response || []);
+      } catch (err) {
+        setFixtures([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchFixtures();
+  }, []);
 
-    const today = new Date().toISOString().slice(0, 10);
-    let url = `/api/football/matches/${competitionCode}?dateFrom=${today}&dateTo=${today}`;
-    if (teamId) url += `&team=${teamId}`;
+  if (loading) return <div className="tf-loading">Loading fixtures...</div>;
 
-    axios.get(url)
-      .then(res => setFixtures(res.data.matches || []))
-      .catch(() => setFixtures([]))
-      .finally(() => setLoading(false));
-  }, [competitionCode, teamId]);
-
-  if (loading) return <div>Loading fixtures...</div>;
-  if (!fixtures.length) return <div>No matches for today.</div>;
+  if (!fixtures.length)
+    return <div className="tf-no-fixtures">No live fixtures or scheduled games today.</div>;
 
   return (
-    <div className="fixtures-list">
-      <h3>Today's Fixtures</h3>
-      <ul>
-        {fixtures.map(match => {
-          // Convert UTC to UK time zone
-          const ukTime = new Date(match.utcDate).toLocaleString('en-GB', {
-            timeZone: 'Europe/London',
-            hour: '2-digit', minute: '2-digit'
-          });
-          return (
-            <li key={match.id}>
-              {match.homeTeam.name} vs {match.awayTeam.name}<br />
-              <span style={{color: '#8fd953'}}>{ukTime} UK time</span>
-            </li>
-          );
-        })}
-      </ul>
+    <div className="tf-container">
+      <h2 className="tf-title">Today's Fixtures</h2>
+        <div className="tf-list">
+          <div className="card fixtures-card card--blue">
+            <div className="card-header fixtures-header">
+              <div className="card-title">Today's Fixtures</div>
+              <div className="card-meta">
+                <span className="date-badge">{new Date().toLocaleDateString()}</span>
+              </div>
+            </div>
+        {fixtures.map((fix) => (
+          <div className="tf-card" key={fix.fixture.id}>
+            <div className={`tf-status tf-status-${fix.fixture.status.short.toLowerCase()}`}>
+              {getMatchStatus(fix.fixture.status.short)}
+            </div>
+            <div className="tf-time">
+              {formatTime(fix.fixture.date)}
+            </div>
+            <div className="tf-teams">
+              <div className="tf-team tf-home">
+                <img src={fix.teams.home.logo} alt="home logo" className="tf-team-logo" />
+                <span>{fix.teams.home.name}</span>
+              </div>
+              <span className="tf-score">
+                {fix.goals.home} : {fix.goals.away}
+              </span>
+              <div className="tf-team tf-away">
+                <span>{fix.teams.away.name}</span>
+                <img src={fix.teams.away.logo} alt="away logo" className="tf-team-logo" />
+              </div>
+            </div>
+            <div className="tf-league">
+              <img src={fix.league.logo} alt="league" className="tf-league-logo" />
+              <span>{fix.league.name}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
     </div>
   );
 }
-
-export default LeagueFixtures;

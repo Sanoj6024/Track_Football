@@ -1,0 +1,123 @@
+.tf-container {
+  background: #151c2a;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 18px;
+  max-width: 750px;
+  color: #f8fafd;
+  box-shadow: 0 6px 32px 0 #12162490;
+}
+
+.tf-title {
+  margin-bottom: 2rem;
+  font-size: 2.2rem;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #47cdff;
+}
+
+.tf-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.tf-card {
+  background: #232c42;
+  border-radius: 16px;
+  padding: 1.4rem 2rem;
+  min-width: 315px;
+  max-width: 360px;
+  box-shadow: 0 2px 16px 0 #19213760;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform .12s;
+}
+.tf-card:hover {
+  transform: translateY(-4px) scale(1.018);
+  box-shadow: 0 4px 32px 0 #179add90;
+}
+
+.tf-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  gap: 0.88rem;
+  margin: 0.5rem 0;
+}
+.tf-team {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.tf-team-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #303c5a;
+  margin: 0 2px;
+}
+.tf-score {
+  font-size: 1.4rem;
+  font-weight: bold;
+  background: #191d26;
+  border-radius: 7px;
+  padding: 0.18em 0.7em;
+  margin: 0 0.4em;
+  color: #47cdff;
+  letter-spacing: 1px;
+  box-shadow: 0 0 4px #1117;
+  min-width: 50px;
+  text-align: center;
+}
+.tf-status {
+  font-size: 1.1rem;
+  margin-bottom: 0.4em;
+  font-weight: 700;
+  padding: 3px 0.8em;
+  border-radius: 8px;
+}
+.tf-status-live {
+  background: #16e08c22;
+  color: #0fed91;
+  border: 1px solid #0bed91;
+}
+.tf-status-ft,
+.tf-status-halftime {
+  background: #f88a8a22;
+  color: #fc7676;
+  border: 1px solid #e05252;
+}
+.tf-status-ns {
+  background: #3e528822;
+  color: #39b0fa;
+  border: 1px solid #2e597a;
+}
+.tf-league {
+  display: flex;
+  align-items: center;
+  margin-top: 0.6rem;
+  font-size: 1rem;
+  gap: 0.6em;
+  color: #d5e2fb;
+}
+.tf-league-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: #fff1;
+}
+.tf-time {
+  font-size: 1rem;
+  color: #83e5ff;
+  margin: 0.1em 0 0.2em;
+}
+.tf-loading, .tf-no-fixtures {
+  color: #47cdff;
+  text-align: center;
+  font-size: 1.6rem;
+  margin-top: 2rem;
+}

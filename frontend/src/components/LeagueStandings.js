@@ -15,35 +15,43 @@ function LeagueStandings({ competitionCode }) {
   }, [competitionCode]);
 
   if (!competitionCode) return null;
-  if (loading) return <div>Loading standings...</div>;
-  if (!standings.length) return <div>No standings available.</div>;
+  if (loading) return <div className="card standings-card card--green"><div className="card-body">Loading standings...</div></div>;
+  if (!standings.length) return <div className="card standings-card card--green"><div className="card-body">No standings available.</div></div>;
 
   return (
-    <div className="standings-table">
-      <h3>League Table</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standings.map(team => (
-            <tr key={team.team.id}>
-              <td>{team.position}</td>
-              <td>
-                <img src={team.team.crest} alt="" style={{width:20, marginRight:6}} />
-                {team.team.name}
-              </td>
-              <td>{team.playedGames}</td>
-              <td>{team.won}</td>
-              <td>{team.draw}</td>
-              <td>{team.lost}</td>
-              <td>{team.points}</td>
+    <div className="card">
+      <h2>League Table</h2>
+      <div className="standings-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Position</th>
+              <th>Team</th>
+              <th>MP</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>Points</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {standings.map(team => (
+              <tr key={team.team.id}>
+                <td>{team.position}</td>
+                <td>
+                  <img src={team.team.crest} alt="" style={{width: '24px', marginRight: '8px'}} onError={(e)=>{e.target.style.display='none'}} />
+                  {team.team.name}
+                </td>
+                <td>{team.playedGames}</td>
+                <td>{team.won}</td>
+                <td>{team.draw}</td>
+                <td>{team.lost}</td>
+                <td>{team.points}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

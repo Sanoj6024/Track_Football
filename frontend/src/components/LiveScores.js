@@ -15,20 +15,29 @@ function LiveScores({ competitionCode }) {
   }, [competitionCode]);
 
   if (!competitionCode) return null;
-  if (loading) return <div>Loading live scores...</div>;
-  if (!scores.length) return <div>No live matches.</div>;
 
   return (
-    <div className="live-scores">
-      <h3>Live Scores</h3>
-      <ul>
-        {scores.map(match => (
-          <li key={match.id}>
-            {match.homeTeam.name} {match.score.fullTime.home ?? '-'} - {match.score.fullTime.away ?? '-'} {match.awayTeam.name}
-            <span style={{marginLeft:`8px`, color: '#ff5555'}}>{match.status === 'LIVE' ? 'LIVE' : 'Finished'}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="card livecard card--red">
+      <div className="card-header">Live Scores</div>
+      <div className="card-body">
+        {loading && <div className="muted">Loading live scores…</div>}
+        {!loading && scores.length === 0 && <div className="muted">No live matches.</div>}
+
+        <div className="live-scores-list">
+          {scores.map(match => (
+            <div key={match.id} className="match-card">
+              <div className="match-left">
+                <div className="team">{match.homeTeam.name}</div>
+                <div className="score">{match.score?.fullTime?.home ?? '-' } - {match.score?.fullTime?.away ?? '-'}</div>
+                <div className="team">{match.awayTeam.name}</div>
+              </div>
+              <div className="match-right">
+                {match.status === 'LIVE' ? <span className="badge-live">LIVE</span> : <span className="muted">Finished</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
